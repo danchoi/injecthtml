@@ -5,8 +5,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Maybe
-import Options.Applicative ((<>))
-import qualified Options.Applicative as O
+import Options.Applicative 
 import Control.Applicative
 import Text.XML.HXT.Core
 import Text.XML.HXT.Core
@@ -18,29 +17,29 @@ data Options = Options {
 
 data TemplateOpt = TemplateFile FilePath | TemplateString String
 
-options :: O.Parser Options
+options :: Parser Options
 options = Options 
     <$> ( (TemplateFile <$> 
-          (O.strArgument 
-            ( O.metavar "TEMPLATE-FILE" 
-            <> O.help "Template file path")))
+          (strArgument 
+            ( metavar "TEMPLATE-FILE" 
+            <> help "Template file path")))
         <|> 
           (TemplateString <$>
-            (O.strOption 
-              (O.short 'e'
-              <> O.metavar "TEMPLATE-STRING"
-              <> O.help "Template as inline string"
+            (strOption 
+              (short 'e'
+              <> metavar "TEMPLATE-STRING"
+              <> help "Template as inline string"
               )
             ))
         )
 
-opts :: O.ParserInfo Options
-opts = O.info (O.helper <*> options) 
-          (O.fullDesc <> O.header "injecthtml"
-          <> O.progDesc "HTML template inject")
+opts :: ParserInfo Options
+opts = info (helper <*> options) 
+          (fullDesc <> header "injecthtml"
+          <> progDesc "HTML template inject")
 
 main = do
-    Options{..} <- O.execParser opts
+    Options{..} <- execParser opts
     template <- case templateOpt of
                   TemplateFile f -> readFile f
                   TemplateString s -> return s
