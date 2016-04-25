@@ -45,8 +45,8 @@ sepChar = '@'
 parseInjectRaw :: Parser RawInject
 parseInjectRaw = 
       -- use -@XPATH for STDIN
-      (RawInjectFile <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
-      <|> (RawInjectString <$> (strOption (short 's' <> metavar "STRING@XPATH")))
+      (RawInjectString <$> (strOption (short 's' <> metavar "STRING@XPATH")))
+      <|> (RawInjectFile <$> (strArgument (metavar "FILE@XPATH")))
 
 options :: Parser Options
 options = Options 
