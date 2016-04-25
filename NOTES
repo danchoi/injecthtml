@@ -22,3 +22,6 @@ Options {templateOpt = TemplateFile "template.html", separator = "@", injects = 
 <p>There</p>
 
 
+
+http://stackoverflow.com/questions/26763855/hxt-ignoring-html-dtd-replacing-it-with-xml-dtd
+
