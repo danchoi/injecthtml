@@ -36,15 +36,16 @@ parseTemplateOpt =
     (TemplateString 
       <$> strOption (short 'e' <> metavar "TEMPLATE-STRING" <> help "Template as inline string"))
 
+sepChar = '@'
+
 parseInject :: Parser Inject
 parseInject = 
       -- use -@XPATH for STDIN
-      InjectFile <$> (parseInjectOpt <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
+      InjectFile <$> (parseInjectOpt sepChar <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
       <|> InjectString <$> (parseInjectOpt <$> (strOption (short 's' <> metavar "STRING@XPATH")))
 
-sepChar = '#'
 
-parseInjectOpt = (takeWhile (/= sepChar)) &&& (drop 1 . dropWhile (/= sepChar)) 
+parseInjectOpt sepChar = (takeWhile (/= sepChar)) &&& (drop 1 . dropWhile (/= sepChar)) 
 
 options :: Parser Options
 options = Options 
