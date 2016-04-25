@@ -40,7 +40,7 @@ parseTemplateOpt =
     (TemplateString 
       <$> strOption (short 'e' <> metavar "TEMPLATE-STRING" <> help "Template as inline string"))
 
-sepChar = '@'
+sepChar = '!'
 
 parseInjectRaw :: Parser RawInject
 parseInjectRaw = 
@@ -52,7 +52,7 @@ options :: Parser Options
 options = Options 
     <$> parseTemplateOpt 
     <*> strOption (short 'k' <> metavar "SEPARATOR"
-                  <> value "@" 
+                  <> value "!" 
                   <> help "Separator character or characters between FILE/STRING and XPATH")
     <*> many parseInjectRaw
 
@@ -60,6 +60,10 @@ opts :: ParserInfo Options
 opts = info (helper <*> options) 
           (fullDesc <> header "injecthtml"
           <> progDesc "HTML template inject")
+
+-- Warning, if this is full HTML document, it will strip off the doctype
+-- <!DOCTYPE html>
+-- injecthtml is better used with smaller templates
 
 main = do
     o@Options{..} <- execParser opts
