@@ -3,19 +3,20 @@ module Main where
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
-import Data.Text (Text)
+import Data.Text (Text, pack, unpack)
 import Data.Maybe
 import Options.Applicative 
-import Options.Applicative.Builder
-import Options.Applicative.Types (readerAsk)
 import Control.Applicative
 import Text.XML.HXT.Core
 import Text.XML.HXT.Core
 import Text.XML.HXT.XPath.Arrows
+import qualified Text.Parsec as P hiding (many, (<|>)) 
+import Data.Functor.Identity (Identity)
 
 data Options = Options {
       templateOpt :: TemplateOpt
-    , injects :: [Inject]
+    , separator :: String
+    , injects :: [RawInject]
     } deriving Show
 
 type XPath = String
@@ -23,6 +24,9 @@ type XPath = String
 data TemplateOpt = TemplateFile FilePath 
                  | TemplateString String 
                    deriving Show
+data RawInject = RawInjectFile String
+               | RawInjectString String
+            deriving Show
 
 data Inject = InjectFile (FilePath, XPath)
             | InjectString (String, XPath)
@@ -38,19 +42,19 @@ parseTemplateOpt =
 
 sepChar = '@'
 
-parseInject :: Parser Inject
-parseInject = 
+parseInjectRaw :: Parser RawInject
+parseInjectRaw = 
       -- use -@XPATH for STDIN
-      InjectFile <$> (parseInjectOpt sepChar <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
-      <|> InjectString <$> (parseInjectOpt <$> (strOption (short 's' <> metavar "STRING@XPATH")))
-
-
-parseInjectOpt sepChar = (takeWhile (/= sepChar)) &&& (drop 1 . dropWhile (/= sepChar)) 
+      (RawInjectFile <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
+      <|> (RawInjectString <$> (strOption (short 's' <> metavar "STRING@XPATH")))
 
 options :: Parser Options
 options = Options 
     <$> parseTemplateOpt 
-    <*> many parseInject
+    <*> strOption (short 'k' <> metavar "SEPARATOR"
+                  <> value "@" 
+                  <> help "Separator character or characters between FILE/STRING and XPATH")
+    <*> many parseInjectRaw
 
 opts :: ParserInfo Options
 opts = info (helper <*> options) 
@@ -59,15 +63,27 @@ opts = info (helper <*> options)
 
 main = do
     o@Options{..} <- execParser opts
-    print o
-    injects' :: [(XPath, String)] <- mapM loadInject injects
+    let injects' = map (parseInject' separator) injects
+    injects'' :: [(XPath, String)] <- mapM loadInject injects'
     template <- case templateOpt of
                   TemplateFile f -> readFile f
                   TemplateString s -> return s
     let indent = True
     let indent' = if indent then yes else no
-    res <- runX (processTemplate indent' template injects') 
+    res <- runX (processTemplate indent' template injects'') 
     mapM putStrLn res
+
+
+parseInject' :: String -> RawInject  -> Inject
+parseInject' sep (RawInjectFile x) = InjectFile $ parseInject sep x
+parseInject' sep (RawInjectString x) = InjectString $ parseInject sep x
+
+parseInject :: String -> String -> (String, XPath)
+parseInject sepChar s = 
+    let xs = T.splitOn (T.pack sepChar) (T.pack s)
+    in case xs of
+      [x,y] -> (unpack x, unpack y)
+      _ -> error $ "Can't separate " ++ show s ++ " with separator " ++ show sepChar
 
 loadInject :: Inject -> IO (String, XPath)
 loadInject (InjectFile (filePath, xpath)) | filePath == "-" = (,) <$> getContents <*> pure xpath
