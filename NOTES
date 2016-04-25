@@ -5,3 +5,13 @@ Options {templateOpt = TemplateFile "template.html", injects = [InjectString ("<
 
 
 
+injecthtml $ injecthtml template.html -f 'README.md@//h2/text()' -s 'PRETTY@//p[1]/text()' 
+Options {templateOpt = TemplateFile "template.html", separator = "@", injects = [RawInjectFile "README.md@//h2/text()",RawInjectString "PRETTY@//p[1]/text()"]}
+<h2># injecthtml
+
+Inject html layout templates using shell file arguments and XPath expressions.
+
+</h2>
+<p>PRETTY</p>
+
+
