@@ -15,3 +15,10 @@ Inject html layout templates using shell file arguments and XPath expressions.
 <p>PRETTY</p>
 
 
+
+injecthtml $ echo -n "HELLO" | injecthtml template.html -f '-@//h2/text()' 
+Options {templateOpt = TemplateFile "template.html", separator = "@", injects = [RawInjectFile "-@//h2/text()"]}
+<h2>HELLO</h2>
+<p>There</p>
+
+
