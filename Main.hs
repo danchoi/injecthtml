@@ -6,6 +6,8 @@ import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Maybe
 import Options.Applicative 
+import Options.Applicative.Builder
+import Options.Applicative.Types (readerAsk)
 import Control.Applicative
 import Text.XML.HXT.Core
 import Text.XML.HXT.Core
@@ -13,25 +15,42 @@ import Text.XML.HXT.XPath.Arrows
 
 data Options = Options {
       templateOpt :: TemplateOpt
-    }
+    , injects :: [Inject]
+    } deriving Show
 
-data TemplateOpt = TemplateFile FilePath | TemplateString String
+type XPath = String
 
+data TemplateOpt = TemplateFile FilePath 
+                 | TemplateString String 
+                   deriving Show
+
+data Inject = InjectSTDIN XPath 
+            | InjectFile (XPath, FilePath)
+            | InjectString (XPath, String)
+            deriving Show
+
+parseTemplateOpt :: Parser TemplateOpt
+parseTemplateOpt =
+    (TemplateFile 
+      <$> strArgument (metavar "TEMPLATE-FILE" <> help "Template file path"))
+    <|> 
+    (TemplateString 
+      <$> strOption (short 'e' <> metavar "TEMPLATE-STRING" <> help "Template as inline string"))
+
+parseInject :: Parser Inject
+parseInject = 
+      (InjectSTDIN <$> strArgument (metavar "XPATH"))
+      <|> InjectFile <$> (parseInjectOpt <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
+      <|> InjectString <$> (parseInjectOpt <$> (strOption (short 's' <> metavar "STRING@XPATH")))
+
+sepChar = '#'
+parseInjectOpt = (takeWhile (/= sepChar)) &&& (drop 1 . dropWhile (/= sepChar)) 
+
+ 
 options :: Parser Options
 options = Options 
-    <$> ( (TemplateFile <$> 
-          (strArgument 
-            ( metavar "TEMPLATE-FILE" 
-            <> help "Template file path")))
-        <|> 
-          (TemplateString <$>
-            (strOption 
-              (short 'e'
-              <> metavar "TEMPLATE-STRING"
-              <> help "Template as inline string"
-              )
-            ))
-        )
+    <$> parseTemplateOpt 
+    <*> many parseInject
 
 opts :: ParserInfo Options
 opts = info (helper <*> options) 
@@ -39,7 +58,9 @@ opts = info (helper <*> options)
           <> progDesc "HTML template inject")
 
 main = do
-    Options{..} <- execParser opts
+    o@Options{..} <- execParser opts
+    print o
+
     template <- case templateOpt of
                   TemplateFile f -> readFile f
                   TemplateString s -> return s
