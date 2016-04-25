@@ -24,9 +24,8 @@ data TemplateOpt = TemplateFile FilePath
                  | TemplateString String 
                    deriving Show
 
-data Inject = InjectSTDIN XPath 
-            | InjectFile (XPath, FilePath)
-            | InjectString (XPath, String)
+data Inject = InjectFile (FilePath, XPath)
+            | InjectString (String, XPath)
             deriving Show
 
 parseTemplateOpt :: Parser TemplateOpt
@@ -39,14 +38,14 @@ parseTemplateOpt =
 
 parseInject :: Parser Inject
 parseInject = 
-      (InjectSTDIN <$> strArgument (metavar "XPATH"))
-      <|> InjectFile <$> (parseInjectOpt <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
+      -- use -@XPATH for STDIN
+      InjectFile <$> (parseInjectOpt <$> (strOption (short 'f' <> metavar "FILE@XPATH")))
       <|> InjectString <$> (parseInjectOpt <$> (strOption (short 's' <> metavar "STRING@XPATH")))
 
 sepChar = '#'
+
 parseInjectOpt = (takeWhile (/= sepChar)) &&& (drop 1 . dropWhile (/= sepChar)) 
 
- 
 options :: Parser Options
 options = Options 
     <$> parseTemplateOpt 
@@ -60,29 +59,26 @@ opts = info (helper <*> options)
 main = do
     o@Options{..} <- execParser opts
     print o
-
+    injects' :: [(XPath, String)] <- mapM loadInject injects
     template <- case templateOpt of
                   TemplateFile f -> readFile f
                   TemplateString s -> return s
-    inject <- TL.getContents
-    r <- run True template
-    putStrLn r
-
-
-run :: Bool -> String -> IO String
-run indent rawHTML = do
+    let indent = True
     let indent' = if indent then yes else no
-    res <- runX (processTemplate indent' rawHTML)  
-    return . concat $ res
+    res <- runX (processTemplate indent' template injects') 
+    mapM putStrLn res
+
+loadInject :: Inject -> IO (String, XPath)
+loadInject (InjectFile (filePath, xpath)) | filePath == "-" = (,) <$> getContents <*> pure xpath
+                                          | otherwise = (,) <$> (readFile filePath) <*> pure xpath
+loadInject (InjectString x) = return x
 
 
-processTemplate indent html = 
+processTemplate indent html injects = 
       readString [withValidate no, withParseHTML yes, withInputEncoding utf8] html
       >>> setTraceLevel 0
-      >>> process 
+      >>> (foldl (>>>) this . map process $ injects)
       >>> writeDocumentToString [withIndent indent, withOutputHTML, withXmlPi no]
 
-process = processXPathTrees (
-    none  -- replace
-  ) "//h2/text()"
+process (replace, xpath') = processXPathTrees (constA replace >>> xread) xpath'
 

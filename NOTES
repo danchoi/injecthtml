@@ -1,0 +1,7 @@
+injecthtml $ injecthtml template.html -s '<h1>test</h1>#//h2'
+Options {templateOpt = TemplateFile "template.html", injects = [InjectString ("<h1>test</h1>","//h2")]}
+<h1>test</h1>
+<p>There</p>
+
+
+
