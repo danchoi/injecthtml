@@ -52,8 +52,8 @@ options :: Parser Options
 options = Options 
     <$> parseTemplateOpt 
     <*> strOption (short 'k' <> metavar "SEPARATOR"
-                  <> value "!" 
-                  <> help "Separator character or characters between FILE/STRING and XPATH")
+                  <> value "::" 
+                  <> help "Separator characters between FILE/STRING and XPATH. Default ::")
     <*> many parseInjectRaw
 
 opts :: ParserInfo Options
@@ -84,10 +84,8 @@ parseInject' sep (RawInjectString x) = InjectString $ parseInject sep x
 
 parseInject :: String -> String -> (String, XPath)
 parseInject sepChar s = 
-    let xs = T.splitOn (T.pack sepChar) (T.pack s)
-    in case xs of
-      [x,y] -> (unpack x, unpack y)
-      _ -> error $ "Can't separate " ++ show s ++ " with separator " ++ show sepChar
+    let (x,y) = T.breakOn (T.pack sepChar) (T.pack s)
+    in  (unpack x, drop (length sepChar) . unpack $  y)
 
 loadInject :: Inject -> IO (String, XPath)
 loadInject (InjectFile (filePath, xpath)) | filePath == "-" = (,) <$> getContents <*> pure xpath
@@ -101,5 +99,11 @@ processTemplate indent html injects =
       >>> (foldl (>>>) this . map process $ injects)
       >>> writeDocumentToString [withIndent indent, withOutputHTML, withXmlPi no]
 
-process (replace, xpath') = processXPathTrees (constA replace >>> xread) xpath'
+process (replacement, xpath') = 
+    processXPathTrees 
+      (
+        replaceChildren (
+          constA replacement >>> xread
+        )
+      ) xpath'
 
