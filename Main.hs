@@ -15,7 +15,7 @@ import Data.Functor.Identity (Identity)
 
 data Options = Options {
       templateOpt :: TemplateOpt
-    , separator :: String
+    , separatorChars :: String
     , injects :: [RawInject]
     } deriving Show
 
@@ -39,8 +39,6 @@ parseTemplateOpt =
     <|> 
     (TemplateString 
       <$> strOption (short 'e' <> metavar "TEMPLATE-STRING" <> help "Template as inline string"))
-
-sepChar = '!'
 
 parseInjectRaw :: Parser RawInject
 parseInjectRaw = 
@@ -67,7 +65,7 @@ opts = info (helper <*> options)
 
 main = do
     o@Options{..} <- execParser opts
-    let injects' = map (parseInject' separator) injects
+    let injects' = map (parseInject' separatorChars) injects
     injects'' :: [(XPath, String)] <- mapM loadInject injects'
     template <- case templateOpt of
                   TemplateFile f -> readFile f
@@ -83,9 +81,9 @@ parseInject' sep (RawInjectFile x) = InjectFile $ parseInject sep x
 parseInject' sep (RawInjectString x) = InjectString $ parseInject sep x
 
 parseInject :: String -> String -> (String, XPath)
-parseInject sepChar s = 
-    let (x,y) = T.breakOn (T.pack sepChar) (T.pack s)
-    in  (unpack x, drop (length sepChar) . unpack $  y)
+parseInject separator s = 
+    let (x,y) = T.breakOn (T.pack separator) (T.pack s)
+    in  (unpack x, drop (length separator) . unpack $  y)
 
 loadInject :: Inject -> IO (String, XPath)
 loadInject (InjectFile (filePath, xpath)) | filePath == "-" = (,) <$> getContents <*> pure xpath
