@@ -7,16 +7,15 @@ Usage
 
     injecthtml
     
-    Usage: injecthtml (TEMPLATE-FILE | -e TEMPLATE-STRING) [-k SEPARATOR]
-                      ([-s STRING@XPATH] | [-f FILE@XPATH])
-      HTML template inject
+    Usage: injecthtml (TEMPLATE-FILE | -e TEMPLATE-STRING) ([-s STRING[OP]XPATH] |
+                      [-f FILE[OP]XPATH])
+      OP expressions are >>[XPATH] to insert children and ^^[XPATH] to replace node
     
     Available options:
       -h,--help                Show this help text
       TEMPLATE-FILE            Template file path
       -e TEMPLATE-STRING       Template as inline string
-      -k SEPARATOR             Separator characters between FILE/STRING and XPATH.
-                               Default ::
+      -f FILE[OP]XPATH         Use -[OP]XPATH to use STDIN
 
 
     # template.html
@@ -27,8 +26,8 @@ Usage
       </p>
     </div>
 
-    # command:
-    echo -n 'WORLD' | injecthtml template.html  -f '-:://p[1]/span' 
+    # command; the >> operator replaces child:
+    echo -n 'WORLD' | injecthtml template.html  -f '->>//p[1]/span' 
 
     # output:
     <div>
@@ -38,3 +37,12 @@ Usage
       </p>
     </div>
 
+    # command; the ^^ operator replaces node:
+    echo -n 'WORLD' | injecthtml template.html  -f '-^^//p[1]/span' 
+
+    <div>
+      <h2>HELLO</h2>
+      <p class="content">
+        WORLD
+      </p>
+    </div>
