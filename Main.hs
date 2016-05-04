@@ -107,10 +107,9 @@ processTemplate indent html injects =
 process (replacement, op, xpath') = 
     processXPathTrees 
       (
-        case op of
-          ReplaceChild -> 
-            replaceChildren (constA replacement >>> xread)
-          ReplaceNode -> 
-            (constA replacement >>> xread)
+        let s = readString [withValidate no, withParseHTML yes, withInputEncoding utf8] replacement
+        in case op of
+              ReplaceChild -> replaceChildren s
+              ReplaceNode -> s
       ) xpath'
 
