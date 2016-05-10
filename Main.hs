@@ -54,7 +54,7 @@ parseInjectRaw =
 
 options :: Parser Options
 options = Options 
-    <$> flag False True (short 'i' <> help "Pretty injent. Default false.")
+    <$> flag False True (short 'i' <> help "Pretty indent. Default false.")
     <*> parseTemplateOpt 
     <*> many parseInjectRaw
 
