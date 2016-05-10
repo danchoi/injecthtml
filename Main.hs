@@ -14,7 +14,8 @@ import qualified Text.Parsec as P hiding (many, (<|>))
 import Data.Functor.Identity (Identity)
 
 data Options = Options {
-      templateOpt :: TemplateOpt
+      indent :: Bool
+    , templateOpt :: TemplateOpt
     , injects :: [RawInject]
     } deriving Show
 
@@ -53,7 +54,8 @@ parseInjectRaw =
 
 options :: Parser Options
 options = Options 
-    <$> parseTemplateOpt 
+    <$> flag False True (short 'i' <> help "Pretty injent. Default false.")
+    <*> parseTemplateOpt 
     <*> many parseInjectRaw
 
 opts :: ParserInfo Options
@@ -73,7 +75,6 @@ main = do
     template <- case templateOpt of
                   TemplateFile f -> readFile f
                   TemplateString s -> return s
-    let indent = True
     let indent' = if indent then yes else no
     res <- runX (processTemplate indent' template injects'') 
     mapM putStrLn res
