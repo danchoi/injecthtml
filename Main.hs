@@ -8,7 +8,6 @@ import Data.Maybe
 import Options.Applicative 
 import Control.Applicative
 import Text.XML.HXT.Core
-import Text.XML.HXT.Core
 import Text.XML.HXT.XPath.Arrows
 import qualified Text.Parsec as P hiding (many, (<|>)) 
 import Data.Functor.Identity (Identity)

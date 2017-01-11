@@ -1,1 +1,1 @@
-echo "CONTENT" | injecthtml template.html -f "-:://p[1]"
+echo "CONTENT" | injecthtml template.html -f "->>//p[1]"
